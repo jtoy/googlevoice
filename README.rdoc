@@ -1,6 +1,6 @@
 = googlevoice
 
-Description goes here.
+a ruby library to allow you access to Google Voice.  You can make calls, change your preferences, get your call and chat history, and send smses.
 
 == Note on Patches/Pull Requests
  
