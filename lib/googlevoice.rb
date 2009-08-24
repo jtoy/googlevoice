@@ -2,10 +2,25 @@ require 'rubygems'
 require 'mechanize'
 require 'nokogiri'
 require 'json'
+require 'ostruct'
 class GoogleVoice
   BASE = "https://www.google.com/voice/"
+  
+  
+  #TODO get rid of these kludgy global variables
+  def self.agent
+    @@agent
+  end
+  def self.options
+    @@options
+  end
+  def agent
+    @agent
+  end
+  
   def initialize(u, p)
-    @u,@p = u,p
+    @u = u
+    @p = p
   end
   
   def login
@@ -19,7 +34,9 @@ class GoogleVoice
     raise "Login failed" unless dialing_form
     @auth_token = dialing_form.field_with(:name => '_rnr_se').value
     @options = {:_rnr_se => @auth_token}
+    @@options = @options
     @agent = agent
+    @@agent = @agent
   end
 
   def logged_in?
@@ -31,25 +48,28 @@ class GoogleVoice
   def most_frequently_used_number
     JSON.parse(Nokogiri::XML(@agent.get(BASE+'inbox/recent/placed/').body).at('json').inner_text)
   end
-  
-  def cancel number, forward_number
     
+  def my_number
+    JSON.parse(Nokogiri::XML(@agent.get(BASE+'contacts').body).at('json').inner_text)['settings']['primaryDid']
   end
   
-  
-  #json of your phones
   def phones
     login unless logged_in?
-    JSON.parse(Nokogiri::XML(@agent.get(BASE+'contacts').body).at('json').inner_text)['phones']
+    JSON.parse(Nokogiri::XML(@agent.get(BASE+'contacts').body).at('json').inner_text)['phones'].collect do |x|
+      Phone.new x.last.merge(:phone_id => x.last['id'],:type_id => x.last['type'] )
+    end  
   end
   
-  def agent
-    @agent
-  end
+
   
-  def call number,forward_number=default_number
+  def call number,forward_number=most_frequently_used_number
     login unless logged_in?
     @agent.post(BASE+'call/connect/', @options.merge(:outgoingNumber => number,:forwardingNumber => forward_number))
+  end
+  
+  def cancel number, forward_number
+    login unless logged_in?
+    @agent.post(BASE+'voice/call/cancel/ ', @options.merge(:cancelType=>"C2C",:outgoingNumber => number,:forwardingNumber => forward_number))
   end
   
   def smses
@@ -63,31 +83,76 @@ class GoogleVoice
     @agent.post(BASE+'sms/send/',@options.merge(:text => text,:phoneNumber => number))
   end
   
-  def enable number
-    
-  end
-  
-  def disable number
-    
-  end
-  
-  def phones
-    
-  end
+
   
   def logout
-    if @agent
+    if logged_in?
       @agent.get("https://www.google.com/voice/account/signout")
       @agent = nil
     end
     self
   end
-  
-  
-  private
-  
-  def cached_json
-    
-  end
-
 end
+
+
+class Phone < OpenStruct
+  #attributes: 
+  # phone_id:  google used id, int (called phoneId from google)
+  # phoneNumber: i18n phone number
+  # formattedNumber: humanized phone number string
+  # we: data dict
+  # wd: data dict
+  # verified: bool
+  # name: string
+  # smsEnabled: bool
+  # scheduleSet: bool
+  # policyBitmask: int
+  # weekdayTimes: list
+  # dEPRECATEDDisabled: bool
+  # weekdayAllDay: bool
+  # telephonyVerified: bool
+  # weekendTimes: list
+  # active: bool
+  # weekendAllDay: bool
+  # type_id: int  (called type from google)
+  # enabledForOthers: bool
+
+  def active?
+    active
+  end
+  
+  def type_name
+    case  type_id
+    when 2
+      "cell"
+    when 7
+      "gizmo"
+    when 3
+      "land"
+    else
+      "unknown"
+    end
+  end
+  
+  def to_s
+    "#{name} : #{formattedNumber}"
+  end
+  
+  def enable
+    GoogleVoice.agent.post(GoogleVoice::BASE+"settings/editDefaultForwarding/",GoogleVoice.options.merge({:enabled=>1,:phoneId=>phone_id}))
+    active = true
+  end
+  
+  def disable
+    Google.Voice.agent.post(GoogleVoice::BASE+"settings/editDefaultForwarding/",GoogleVoice.options.merge({:enabled=>0,:phoneId=>phone_id}))
+    active = false
+  end
+  
+end
+
+
+class Message
+  
+end
+
+
