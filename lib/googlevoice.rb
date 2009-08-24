@@ -62,9 +62,9 @@ class GoogleVoice
   
 
   
-  def call number,forward_number=most_frequently_used_number
+  def call number,forward_number=most_frequently_used_number,remember=false
     login unless logged_in?
-    @agent.post(BASE+'call/connect/', @options.merge(:outgoingNumber => number,:forwardingNumber => forward_number))
+    @agent.post(BASE+'call/connect/', @options.merge(:outgoingNumber => number,:forwardingNumber => forward_number,:subscriberNumber=> "undefined",:remember => (remember ? 1 : 0)))
   end
   
   def cancel number, forward_number
@@ -74,7 +74,10 @@ class GoogleVoice
   
   def smses
     login unless logged_in?
-    JSON.parse(Nokogiri::XML(@agent.get(BASE+'inbox/recent/sms/').body).at('json').inner_text)
+    Nokogiri::HTML(@agent.get(BASE+'inbox/recent/sms/').body).search('.gc-message-sms-row').collect do |x|
+      SMS.new( x.search('.gc-message-sms-from').inner_text.strip,x.search('.gc-message-sms-text').inner_text.strip,x.search('.gc-message-sms-time').inner_text.strip)
+      
+    end
   end
   
   
@@ -155,4 +158,16 @@ class Message
   
 end
 
+
+class SMS
+  def initialize from,message,time
+    @from=from
+    @message = message
+    @time = time
+  end
+  
+  def to_s
+    message
+  end
+end
 
