@@ -74,10 +74,23 @@ class GoogleVoice
   
   def smses
     login unless logged_in?
-    Nokogiri::HTML(@agent.get(BASE+'inbox/recent/sms/').body).search('.gc-message-sms-row').collect do |x|
-      SMS.new( x.search('.gc-message-sms-from').inner_text.strip,x.search('.gc-message-sms-text').inner_text.strip,x.search('.gc-message-sms-time').inner_text.strip)
-      
+    doc = @agent.get(BASE+'inbox/recent/sms/')  
+    ids =   JSON.parse(Nokogiri::XML(doc.body).at('json').inner_text)['messages'].keys
+    smses = []
+    #TODO: we cant search on ids because ids cant begin with numbers,but google doesnt follow standards
+    Nokogiri::HTML(doc.body).search('.goog-flat-button.gc-message.gc-message-read').each do |x|
+      next unless ids.include?(x['id'])
+      x.search('.gc-message-sms-row').each do |sms|
+        smses << SMS.new( 
+          sms.search('.gc-message-sms-from').inner_text.strip,
+          sms.search('.gc-message-sms-text').inner_text.strip,
+          sms.search('.gc-message-sms-time').inner_text.strip,
+          x['id']
+        )
+
+      end
     end
+    smses
   end
   
   
@@ -158,12 +171,26 @@ class Message
   
 end
 
+class SMSThread
+  
+  def smses
+    
+  end
+  
+end
+
 
 class SMS
-  def initialize from,message,time
+  attr_reader :from,:message,:sent_at,:sms_id
+  def initialize from,message,sent_at,sms_id
     @from=from
     @message = message
-    @time = time
+    @sent_at = sent_at
+    @sms_id = sms_id
+  end
+  
+  def me?
+    from == "Me:"
   end
   
   def to_s
