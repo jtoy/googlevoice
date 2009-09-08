@@ -49,6 +49,7 @@ class GoogleVoice
     JSON.parse(Nokogiri::XML(@agent.get(BASE+'inbox/recent/placed/').body).at('json').inner_text)
   end
     
+  #your google voice number
   def my_number
     JSON.parse(Nokogiri::XML(@agent.get(BASE+'contacts').body).at('json').inner_text)['settings']['primaryDid']
   end
@@ -60,6 +61,12 @@ class GoogleVoice
     end  
   end
   
+  def settings
+    login unless logged_in?
+    JSON.parse(Nokogiri::XML(@agent.get(BASE+'contacts').body).at('json').inner_text)['settings'].collect do |x|
+      Phone.new x.last.merge(:phone_id => x.last['id'],:type_id => x.last['type'] )
+    end
+  end
 
   
   def call number,forward_number=most_frequently_used_number,remember=false
@@ -70,6 +77,13 @@ class GoogleVoice
   def cancel number, forward_number
     login unless logged_in?
     @agent.post(BASE+'voice/call/cancel/ ', @options.merge(:cancelType=>"C2C",:outgoingNumber => number,:forwardingNumber => forward_number))
+  end
+  
+  
+  
+  def download_voicemails dir="./voicemails"
+    FileUtils.mkdir_p dir
+    
   end
   
   def smses
