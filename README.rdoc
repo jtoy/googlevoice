@@ -5,11 +5,15 @@ a ruby library to allow you access to Google Voice.  You can make calls, change 
 Example usage:
 
 require 'rubygems'
+
 require 'googlevoice'
 
 gv = GoogleVoice.new('username''password')
+
 gv.call 6171231234, 9171231234
+
 smses = gv.smses # a list of recent sms conversations
+
 phones = gv.phones # a list of phones
 
 == Note on tests
