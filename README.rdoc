@@ -2,6 +2,22 @@
 
 a ruby library to allow you access to Google Voice.  You can make calls, change your preferences, get your call and chat history, and send smses.
 
+Example usage:
+
+require 'rubygems'
+require 'googlevoice'
+
+gv = GoogleVoice.new('username''password')
+gv.call 6171231234, 9171231234
+smses = gv.smses # a list of recent sms conversations
+phones = gv.phones # a list of phones
+
+== Note on tests
+
+* to run the tests you need shoulda
+* the tests run by actually connecting to google's service, so you must be online and the tests will run a little slower than normal
+* you must use your own google voice account to test, the tests are non destructive, so you don't need to worry about losing data, you should read all the tests
+
 == Note on Patches/Pull Requests
  
 * Fork the project.
