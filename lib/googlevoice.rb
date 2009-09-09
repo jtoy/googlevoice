@@ -51,7 +51,7 @@ class GoogleVoice
     
   #your google voice number
   def my_number
-    JSON.parse(Nokogiri::XML(@agent.get(BASE+'contacts').body).at('json').inner_text)['settings']['primaryDid']
+    settings['primaryDid']
   end
   
   def phones
@@ -63,9 +63,7 @@ class GoogleVoice
   
   def settings
     login unless logged_in?
-    JSON.parse(Nokogiri::XML(@agent.get(BASE+'contacts').body).at('json').inner_text)['settings'].collect do |x|
-      Phone.new x.last.merge(:phone_id => x.last['id'],:type_id => x.last['type'] )
-    end
+    JSON.parse(Nokogiri::XML(@agent.get(BASE+'contacts').body).at('json').inner_text)['settings']
   end
 
   
