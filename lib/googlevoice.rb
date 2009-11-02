@@ -26,8 +26,11 @@ class GoogleVoice
   def login
     agent = WWW::Mechanize.new
 
-    agent.post("https://www.google.com/accounts/ServiceLoginAuth?service=grandcentral",:Email => @u, :Passwd => @p)
     page = agent.get('http://www.google.com/voice/')
+    form = page.forms.first
+    form.Email = @u
+    form.Passwd = @p
+    page = agent.submit form
  
     dialing_form = page.forms.find {|f| f.has_field?('_rnr_se') }
  
@@ -145,6 +148,9 @@ class Phone < OpenStruct
   # type_id: int  (called type from google)
   # enabledForOthers: bool
 
+
+  attr_writer :gv
+
   def active?
     active
   end
@@ -167,12 +173,12 @@ class Phone < OpenStruct
   end
   
   def enable
-    GoogleVoice.agent.post(GoogleVoice::BASE+"settings/editDefaultForwarding/",GoogleVoice.options.merge({:enabled=>1,:phoneId=>phone_id}))
+    gv.post(GoogleVoice::BASE+"settings/editDefaultForwarding/",GoogleVoice.options.merge({:enabled=>1,:phoneId=>phone_id}))
     active = true
   end
   
   def disable
-    Google.Voice.agent.post(GoogleVoice::BASE+"settings/editDefaultForwarding/",GoogleVoice.options.merge({:enabled=>0,:phoneId=>phone_id}))
+    gv.agent.post(GoogleVoice::BASE+"settings/editDefaultForwarding/",GoogleVoice.options.merge({:enabled=>0,:phoneId=>phone_id}))
     active = false
   end
   
