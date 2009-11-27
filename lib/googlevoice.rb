@@ -64,6 +64,10 @@ class GoogleVoice
     end  
   end
   
+  def contacts
+    
+  end
+  
   def settings
     login unless logged_in?
     JSON.parse(Nokogiri::XML(@agent.get(BASE+'contacts').body).at('json').inner_text)['settings']
@@ -72,7 +76,12 @@ class GoogleVoice
   
   def call number,forward_number=most_frequently_used_number,remember=false
     login unless logged_in?
-    @agent.post(BASE+'call/connect/', @options.merge(:outgoingNumber => number,:forwardingNumber => forward_number,:subscriberNumber=> "undefined",:remember => (remember ? 1 : 0)))
+    @agent.post(BASE+'call/connect/', @options.merge(
+      :outgoingNumber => number,
+      :forwardingNumber => forward_number,
+      :subscriberNumber=> "undefined",
+      :phoneType => 2, #not sure what this exactly does
+      :remember => (remember ? 1 : 0)))
   end
   
   def cancel number, forward_number
