@@ -22,6 +22,11 @@ class GoogleVoice
     @u = u
     @p = p
   end
+  RECENT = BASE + 'inbox/recent/'
+  FEEDS = {:all => BASE+'all/', :inbox=> RECENT+'inbox/', :missed => RECENT+'missed/',
+    :placed => RECENT+'placed/', :received => RECENT+'received/', :recorded => RECENT+'recorded/',
+    :sms => RECENT+'sms/', :spam => RECENT+'spam/', :starred => RECENT+'starred/',
+    :trash => RECENT+'trash/', :voicemail => RECENT+'voicemail/'}
   
   def login
     agent = WWW::Mechanize.new
@@ -96,9 +101,18 @@ class GoogleVoice
     
   end
   
+  def received
+    login unless logged_in?
+    doc = @agent.get(FEEDS[:received])
+    json = JSON.parse(Nokogiri::XML(doc.body).at('json').inner_text)['messages']
+    json.collect do |k,h|
+      History.new h
+    end.sort_by{|x| -x.startTime}
+  end
+  
   def smses
     login unless logged_in?
-    doc = @agent.get(BASE+'inbox/recent/sms/')  
+    doc = @agent.get(FEEDS[:sms])
     ids =   JSON.parse(Nokogiri::XML(doc.body).at('json').inner_text)['messages'].keys
     smses = []
     #TODO: we cant search on ids because ids cant begin with numbers,but google doesnt follow standards
@@ -193,6 +207,9 @@ class Phone < OpenStruct
   
 end
 
+class History < OpenStruct
+  
+end
 
 class Message
   
