@@ -23,7 +23,7 @@ class GoogleVoice
     @p = p
   end
   RECENT = BASE + 'inbox/recent/'
-  FEEDS = {:all => BASE+'all/', :inbox=> RECENT+'inbox/', :missed => RECENT+'missed/',
+  FEEDS = {:all => RECENT+'all/', :inbox=> RECENT+'inbox/', :missed => RECENT+'missed/',
     :placed => RECENT+'placed/', :received => RECENT+'received/', :recorded => RECENT+'recorded/',
     :sms => RECENT+'sms/', :spam => RECENT+'spam/', :starred => RECENT+'starred/',
     :trash => RECENT+'trash/', :voicemail => RECENT+'voicemail/'}
@@ -39,7 +39,7 @@ class GoogleVoice
  
     dialing_form = page.forms.find {|f| f.has_field?('_rnr_se') }
  
-    raise "Login failed" unless dialing_form
+    raise LoginError,"Login failed" unless dialing_form
     @auth_token = dialing_form.field_with(:name => '_rnr_se').value
     @options = {:_rnr_se => @auth_token}
     @@options = @options
@@ -108,6 +108,15 @@ class GoogleVoice
     json.collect do |k,h|
       History.new h
     end.sort_by{|x| -x.startTime}
+  end
+  
+  def all
+    login unless logged_in?
+    doc = @agent.get(FEEDS[:all])
+    json = JSON.parse(Nokogiri::XML(doc.body).at('json').inner_text)['messages']
+    json.collect do |k,h|
+      History.new h
+    end.sort_by{|x| -x.startTime.to_i}
   end
   
   def smses
