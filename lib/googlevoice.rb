@@ -251,3 +251,5 @@ class SMS
   end
 end
 
+class LoginError < Exception
+end
